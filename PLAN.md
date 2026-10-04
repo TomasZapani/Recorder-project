@@ -97,6 +97,7 @@ transcripción y su resumen, guardados en la carpeta correcta.
 
 ## Fase C — Grabar a la SD con el touch y la pantalla (firmware)
 
+- [ ] **Antes de empezar: dejar la microSD limpia.** Hoy tiene instalado el sistema de una Raspberry Pi (varias particiones: la ESP32 solo ve la chica de arranque, ~50 MB usados). Respaldar lo que haga falta y formatearla **entera** como una sola partición FAT32 (tabla MBR). Es una SDHC de ~15 GB, así que FAT32 va directo. En Ubuntu: app «Discos» → la tarjeta → Formatear disco (MBR) → nueva partición FAT. Después, volver a correr `firmware/prueba_hardware/` y verificar que informe el tamaño completo
 - [ ] Toque corto en el TTP223 = empezar/terminar de grabar
 - [ ] OLED: estado, tiempo grabado, espacio libre y **contador de buffers perdidos**
 - [ ] Tarea productora (ADC) y tarea escritora (SD) en FreeRTOS, la escritora fijada al otro core

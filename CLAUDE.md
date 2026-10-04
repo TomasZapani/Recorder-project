@@ -153,6 +153,8 @@ Pendientes conocidos:
 - Clipping: 0,04 % hablando cerca y fuerte (RMS ~800). Si se repite en clases
   reales, bajar ganancia poniendo GAIN a GND (50 dB).
 - La ESP32 una vez dejó de mandar datos; se arregló con el botón EN.
+- **La microSD tiene un sistema de Raspberry Pi instalado** (varias particiones). Hay que
+  formatearla entera a una sola partición FAT32 antes de la Fase C.
 
 ## Entorno
 
