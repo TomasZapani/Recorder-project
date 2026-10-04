@@ -1,0 +1,83 @@
+{# Diálogo con un campo de nombre: crear o renombrar. #}
+{% macro dialogo_nombre(id, titulo, accion, boton, valor='', ayuda='') %}
+<dialog id="{{ id }}">
+  <form class="dialogo" method="post" action="{{ accion }}">
+    <h2>{{ titulo }}</h2>
+    {% if ayuda %}<p>{{ ayuda }}</p>{% endif %}
+    <div class="campo">
+      <label for="{{ id }}-nombre">Nombre</label>
+      <input id="{{ id }}-nombre" name="nombre" value="{{ valor }}" required maxlength="120" autocomplete="off">
+    </div>
+    <div class="dialogo-botones">
+      <button type="button" class="boton" data-cerrar>Cancelar</button>
+      <button type="submit" class="boton boton-primario">{{ boton }}</button>
+    </div>
+  </form>
+</dialog>
+{% endmacro %}
+
+{# Confirmación antes de mandar algo a la papelera. #}
+{% macro dialogo_borrar(id, titulo, accion, explicacion) %}
+<dialog id="{{ id }}">
+  <form class="dialogo" method="post" action="{{ accion }}">
+    <h2>{{ titulo }}</h2>
+    <p>{{ explicacion }} Va a la papelera de la compu: si te arrepentís, la podés recuperar desde ahí.</p>
+    <div class="dialogo-botones">
+      <button type="button" class="boton" data-cerrar>Cancelar</button>
+      <button type="submit" class="boton boton-rojo">Mandar a la papelera</button>
+    </div>
+  </form>
+</dialog>
+{% endmacro %}
+
+{# Reemplazar el audio de una clase. #}
+{% macro dialogo_audio(id, accion) %}
+<dialog id="{{ id }}">
+  <form class="dialogo" method="post" action="{{ accion }}" enctype="multipart/form-data" data-subida>
+    <h2>Reemplazar audio</h2>
+    <p>El audio actual va a la papelera. Se aceptan WAV, MP3, M4A u OGG.</p>
+    <div class="campo">
+      <label for="{{ id }}-archivo">Archivo</label>
+      <input id="{{ id }}-archivo" type="file" name="audio" accept="audio/*,.wav,.mp3,.m4a,.ogg,.opus,.flac" required>
+    </div>
+    <span class="subida-estado" data-estado hidden>Subiendo y convirtiendo…</span>
+    <div class="dialogo-botones">
+      <button type="button" class="boton" data-cerrar>Cancelar</button>
+      <button type="submit" class="boton boton-primario">Reemplazar</button>
+    </div>
+  </form>
+</dialog>
+{% endmacro %}
+
+{# Estado de un trabajo en segundo plano (transcribir o resumir): progreso, o error con reintento. #}
+{% macro trabajo(estado, url_estado, url_reintentar, url_descartar, proveedor='') %}
+{% set verbo = 'transcribir' if estado.tarea == 'transcribir' else 'resumir' %}
+{% if estado.fase == 'error' %}
+  <div class="aviso aviso-error"><strong>No se pudo {{ verbo }}.</strong> {{ estado.error }}</div>
+  <div class="acciones">
+    <form method="post" action="{{ url_reintentar }}"><button class="boton boton-primario">Reintentar</button></form>
+    <form method="post" action="{{ url_descartar }}"><button class="boton">Cerrar</button></form>
+  </div>
+{% else %}
+  {% set pct = (estado.progreso * 100)|round|int %}
+  <div class="progreso" data-progreso-url="{{ url_estado }}" data-tarea="{{ estado.tarea }}" data-proveedor="{{ proveedor }}">
+    <span class="progreso-texto" data-texto>{{ texto_trabajo(estado, proveedor) }}</span>
+    <div class="progreso-barra{% if estado.tarea == 'resumir' %} progreso-indeterminado{% endif %}"><div data-barra style="width: {{ pct }}%;"></div></div>
+    <span class="panel-vacio">{% if estado.tarea == 'transcribir' %}Podés seguir usando la web mientras tanto. Una clase de 90 minutos tarda alrededor de media hora.{% else %}Suele tardar entre medio minuto y un par de minutos.{% endif %}</span>
+  </div>
+{% endif %}
+{% endmacro %}
+
+{% macro texto_trabajo(estado, proveedor='') -%}
+{%- if estado.fase == 'en cola' -%}{% if estado.tarea == 'resumir' %}Transcripción lista. Por resumir…{% else %}En cola, esperando su turno…{% endif %}
+{%- elif estado.tarea == 'resumir' -%}Resumiendo{% if proveedor %} con {{ proveedor }}{% endif %}…
+{%- else -%}Transcribiendo… {{ (estado.progreso * 100)|round|int }} %{%- endif -%}
+{%- endmacro %}
+
+{% macro icono_mas(color='#FFFFFF', tam=18) %}
+<svg width="{{ tam }}" height="{{ tam }}" viewBox="0 0 24 24" fill="none" stroke="{{ color }}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+{% endmacro %}
+
+{% macro icono_ok() %}
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#23884A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+{% endmacro %}

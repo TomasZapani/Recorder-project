@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "macros.html" import dialogo_nombre, dialogo_borrar, dialogo_audio, trabajo %}
+
+{% block titulo %}{{ clase.nombre }} · {{ materia.nombre }} — Mis clases{% endblock %}
+
+{% block contenido %}
+<nav class="migas" aria-label="Ubicación">
+  <a href="{{ url_for('inicio') }}">Mis materias</a><span>›</span>
+  <a href="{{ url_for('ver_materia', materia=materia.nombre) }}">{{ materia.nombre }}</a><span>›</span>
+  <span>{{ clase.nombre }}</span>
+</nav>
+
+<div class="titulo-pagina">
+  <div>
+    <h1>{{ clase.nombre }}</h1>
+    <p class="subtitulo">{{ materia.nombre }} · {{ clase.duracion|duracion }} · modificada {{ clase.modificada|fecha }}</p>
+  </div>
+  <div class="acciones">
+    <button class="boton" data-abrir="renombrar-clase">Renombrar</button>
+    <button class="boton boton-peligro" data-abrir="borrar-clase">Borrar</button>
+  </div>
+</div>
+
+{% set accion_audio = url_for('subir_audio', materia=materia.nombre, clase=clase.nombre) %}
+{% if clase.tiene_audio %}
+<section class="reproductor" aria-label="Audio de la clase">
+  <audio controls preload="metadata" src="{{ url_for('audio', materia=materia.nombre, clase=clase.nombre) }}"></audio>
+  <button class="boton boton-oscuro" data-abrir="reemplazar-audio">Reemplazar audio</button>
+</section>
+{{ dialogo_audio('reemplazar-audio', accion_audio) }}
+{% else %}
+<form class="subida" method="post" action="{{ accion_audio }}" enctype="multipart/form-data" data-subida>
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2F4BC4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+  <strong>Esta clase todavía no tiene audio</strong>
+  <span>Subí una grabación: WAV, MP3, M4A u OGG. Se convierte sola.</span>
+  <label class="boton boton-primario">
+    Elegir archivo
+    <input type="file" name="audio" accept="audio/*,.wav,.mp3,.m4a,.ogg,.opus,.flac" class="oculto" data-enviar-al-elegir>
+  </label>
+  <span class="subida-estado" data-estado hidden>Subiendo y convirtiendo… puede tardar un poco con clases largas.</span>
+</form>
+{% endif %}
+
+{% set url_estado = url_for('estado', materia=materia.nombre, clase=clase.nombre) %}
+{% set url_transcribir = url_for('transcribir', materia=materia.nombre, clase=clase.nombre) %}
+{% set url_resumir = url_for('resumir', materia=materia.nombre, clase=clase.nombre) %}
+{% set url_descartar = url_for('descartar_error', materia=materia.nombre, clase=clase.nombre) %}
+<div class="columnas">
+  <section class="panel panel-principal">
+    <div class="panel-cabecera">
+      <h2>Resumen</h2>
+      {% if not estado and frases and not falta_para_resumir %}
+      <form method="post" action="{{ url_resumir }}">
+        <button class="boton">{% if resumen %}Rehacer resumen{% else %}Resumir{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if estado and estado.tarea == 'resumir' %}
+      {{ trabajo(estado, url_estado, url_resumir, url_descartar, proveedor_actual.nombre) }}
+    {% elif resumen %}
+      <div class="markdown">{{ resumen|markdown }}</div>
+    {% elif not frases %}
+      <p class="panel-vacio">Todavía no hay resumen. Se genera a partir de la transcripción.</p>
+    {% elif falta_para_resumir %}
+      <p class="panel-vacio">Para resumir hace falta un proveedor de IA. {{ falta_para_resumir }}
+        <a href="{{ url_for('ver_configuracion') }}">Ir a Configuración</a></p>
+    {% else %}
+      <p class="panel-vacio">La transcripción está lista. Apretá «Resumir» para armar los apuntes con {{ proveedor_actual.nombre }}.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel panel-lateral">
+    <div class="panel-cabecera">
+      <h2>Transcripción</h2>
+      {% if not estado and clase.tiene_audio %}
+      <form method="post" action="{{ url_transcribir }}">
+        <button class="boton">{% if frases %}Volver a transcribir{% else %}Transcribir{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if estado and estado.tarea == 'transcribir' %}
+      {{ trabajo(estado, url_estado, url_transcribir, url_descartar) }}
+    {% elif frases %}
+      <span class="panel-vacio">Tocá una frase para escuchar ese momento.</span>
+      <div class="frases">
+        {% for f in frases %}
+        <button class="frase" data-t="{{ f.inicio }}"><span class="frase-t">{{ f.inicio|hms }}</span><span>{{ f.texto }}</span></button>
+        {% endfor %}
+      </div>
+    {% elif clase.tiene_audio %}
+      <p class="panel-vacio">Todavía no hay transcripción. Si querés, antes completá el contexto de abajo: ayuda a que escriba bien nombres y términos técnicos.</p>
+    {% else %}
+      <p class="panel-vacio">Subí el audio para poder transcribir.</p>
+    {% endif %}
+
+    <form class="contexto" method="post" action="{{ url_for('guardar_contexto', materia=materia.nombre, clase=clase.nombre) }}">
+      <label for="contexto">Contexto de la clase <span class="opcional">(opcional)</span></label>
+      <textarea id="contexto" name="contexto" rows="3" placeholder="Ej.: Profe Martínez. Vimos ley de Gauss y flujo eléctrico.">{{ contexto }}</textarea>
+      <button class="boton">Guardar contexto</button>
+    </form>
+  </section>
+</div>
+
+{{ dialogo_nombre('renombrar-clase', 'Renombrar clase', url_for('renombrar_clase', materia=materia.nombre, clase=clase.nombre), 'Guardar', valor=clase.nombre, ayuda='Por ejemplo: Clase 3 · Ley de Gauss') }}
+{{ dialogo_borrar('borrar-clase', '¿Borrar «' ~ clase.nombre ~ '»?', url_for('borrar_clase', materia=materia.nombre, clase=clase.nombre), 'Se borra la clase con su audio, transcripción y resumen.') }}
+{% endblock %}

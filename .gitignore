@@ -1,0 +1,19 @@
+# Grabaciones de prueba: tienen voz y datos personales, no van al repo
+*.wav
+*.pcm
+grabacion*_transcripcion.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Configuración local
+.claude/settings.local.json
+.env
+
+# Editor y sistema
+.vscode/
+.idea/
+.DS_Store

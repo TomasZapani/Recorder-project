@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "macros.html" import dialogo_nombre, icono_mas %}
+
+{% block contenido %}
+<div class="titulo-pagina">
+  <div>
+    <h1>Mis materias</h1>
+    <p class="subtitulo">{{ materias|length|plural('materia') }}</p>
+  </div>
+  <button class="boton boton-primario" data-abrir="nueva-materia">{{ icono_mas() }} Nueva materia</button>
+</div>
+
+{% if materias %}
+<div class="grilla">
+  {% for m in materias %}
+    {% set fondo, tinta = m.nombre|colores %}
+    <a class="tarjeta" href="{{ url_for('ver_materia', materia=m.nombre) }}">
+      <div class="sigla" style="background: {{ fondo }}; color: {{ tinta }};">{{ m.nombre|sigla }}</div>
+      <div>
+        <div class="tarjeta-nombre">{{ m.nombre }}</div>
+        <div class="tarjeta-detalle">{{ m.cantidad_clases|plural('clase') }}</div>
+      </div>
+      <div class="tarjeta-pie">
+        {% if m.ultima_clase %}Última actividad: {{ m.ultima_clase|fecha }}{% else %}Sin clases todavía{% endif %}
+      </div>
+    </a>
+  {% endfor %}
+  <button class="tarjeta-agregar" data-abrir="nueva-materia">{{ icono_mas('currentColor', 28) }} Agregar materia</button>
+</div>
+{% else %}
+<div class="vacio">
+  <strong>Todavía no tenés materias</strong>
+  Creá la primera, por ejemplo «Física 1», y adentro vas a poder agregar sus clases.
+</div>
+{% endif %}
+
+{{ dialogo_nombre('nueva-materia', 'Nueva materia', url_for('crear_materia'), 'Crear materia', ayuda='Por ejemplo: Física 1, Análisis Matemático II.') }}
+{% endblock %}

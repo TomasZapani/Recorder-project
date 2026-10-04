@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<div class="vacio">
+  <strong>No encontramos eso</strong>
+  Puede que la materia o la clase se haya renombrado o borrado.
+  <p><a class="boton" href="{{ url_for('inicio') }}">Volver a mis materias</a></p>
+</div>
+{% endblock %}

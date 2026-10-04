@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Mis clases{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='katex/katex.min.css') }}">
+  <script defer src="{{ url_for('static', filename='katex/katex.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='katex/mhchem.min.js') }}"></script>
+</head>
+<body>
+  <header class="cabecera">
+    <a class="marca" href="{{ url_for('inicio') }}">
+      <span class="marca-icono">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
+      </span>
+      Mis clases
+    </a>
+    <a class="boton boton-icono-texto" href="{{ url_for('ver_configuracion') }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Configuración
+    </a>
+  </header>
+
+  <main class="contenido">
+    {% for categoria, mensaje in get_flashed_messages(with_categories=true) %}
+      <div class="aviso aviso-{{ categoria }}" role="status">{{ mensaje }}</div>
+    {% endfor %}
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <script>
+    // Botones con data-abrir="id" abren el <dialog> con ese id.
+    document.addEventListener('click', (e) => {
+      const abrir = e.target.closest('[data-abrir]');
+      if (abrir) {
+        const dialogo = document.getElementById(abrir.dataset.abrir);
+        dialogo.showModal();
+        const campo = dialogo.querySelector('input');
+        if (campo) campo.select();
+      }
+      const cerrar = e.target.closest('[data-cerrar]');
+      if (cerrar) cerrar.closest('dialog').close();
+    });
+    // Elegir archivo en la zona de subida la envía directo.
+    document.addEventListener('change', (e) => {
+      if (e.target.matches('[data-enviar-al-elegir]')) e.target.form.requestSubmit();
+    });
+    // Tocar una frase de la transcripción salta a ese momento del audio.
+    const audio = document.querySelector('audio');
+    const frases = [...document.querySelectorAll('.frase')];
+    document.addEventListener('click', (e) => {
+      const frase = e.target.closest('.frase');
+      if (frase && audio) { audio.currentTime = Number(frase.dataset.t); audio.play(); }
+    });
+    // Resaltar la frase que está sonando.
+    if (audio && frases.length) {
+      audio.addEventListener('timeupdate', () => {
+        let actual = null;
+        for (const f of frases) { if (Number(f.dataset.t) <= audio.currentTime) actual = f; else break; }
+        frases.forEach((f) => f.classList.toggle('frase-actual', f === actual));
+      });
+    }
+    // Barras de progreso: preguntan el estado cada 2 s y recargan la página al terminar.
+    document.querySelectorAll('[data-progreso-url]').forEach((caja) => {
+      const consultar = async () => {
+        try {
+          const r = await fetch(caja.dataset.progresoUrl);
+          const e = await r.json();
+          if (e.fase === 'listo' || e.fase === 'error' || e.tarea !== caja.dataset.tarea) { location.reload(); return; }
+          const pct = Math.round(e.progreso * 100);
+          caja.querySelector('[data-barra]').style.width = pct + '%';
+          const prov = caja.dataset.proveedor ? ` con ${caja.dataset.proveedor}` : '';
+          caja.querySelector('[data-texto]').textContent =
+            e.tarea === 'resumir'
+              ? (e.fase === 'en cola' ? 'Transcripción lista. Por resumir…' : `Resumiendo${prov}…`)
+              : (e.fase === 'en cola' ? 'En cola, esperando su turno…' : `Transcribiendo… ${pct} %`);
+        } catch (_) { /* la web se reinició: reintentar */ }
+        setTimeout(consultar, 2000);
+      };
+      setTimeout(consultar, 2000);
+    });
+    // Fórmulas: KaTeX (guardado dentro de la web, sin internet) dibuja las que marcó el Markdown.
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.katex) return;
+      document.querySelectorAll('.markdown .math').forEach((el) => {
+        katex.render(el.textContent.trim(), el, { displayMode: el.classList.contains('block'), throwOnError: false });
+      });
+    });
+    // Mientras sube: mostrar el aviso y bloquear botones para no mandar dos veces.
+    document.addEventListener('submit', (e) => {
+      const form = e.target.closest('[data-subida]');
+      if (!form) return;
+      form.querySelector('[data-estado]').hidden = false;
+      form.querySelectorAll('button, .boton').forEach((b) => { b.disabled = true; b.style.pointerEvents = 'none'; b.style.opacity = '.5'; });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block titulo %}Configuración — Mis clases{% endblock %}
+
+{% block contenido %}
+<div class="titulo-pagina">
+  <div>
+    <h1>Configuración</h1>
+    <p class="subtitulo">Elegí con qué inteligencia artificial se arman los resúmenes. Usás tu propia cuenta: sin suscripciones de por medio.</p>
+  </div>
+</div>
+
+<div class="config">
+  <nav class="proveedores" aria-label="Proveedores">
+    <span class="proveedores-titulo">Proveedor</span>
+    {% for prov in proveedores %}
+    <a class="proveedor{% if prov.id == p.id %} proveedor-elegido{% endif %}" href="{{ url_for('ver_configuracion', proveedor=prov.id) }}"{% if prov.id == p.id %} aria-current="page"{% endif %}>
+      <span>{{ prov.nombre }}</span>
+      {% if prov.id == config.proveedor %}<span class="etiqueta-uso">En uso</span>
+      {% elif config.cuentas.get(prov.id) and config.cuentas[prov.id].api_key %}<span class="etiqueta-key">Con key</span>{% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+
+  <form class="panel config-form" method="post" action="{{ url_for('guardar_configuracion') }}">
+    <input type="hidden" name="proveedor" value="{{ p.id }}">
+    <h2>{{ p.nombre }}</h2>
+    {% if p.nota %}<p class="panel-vacio">{{ p.nota }}</p>{% endif %}
+
+    {% if p.necesita_key or p.id == 'otro' %}
+    <div class="campo">
+      <label for="api_key">API key{% if not p.necesita_key %} <span class="opcional">(si el servicio la pide)</span>{% endif %}</label>
+      <input id="api_key" name="api_key" type="password" autocomplete="off"
+             placeholder="{% if key_oculta %}Guardada: {{ key_oculta }} — pegá otra para cambiarla{% else %}Pegá tu API key acá{% endif %}">
+      <span class="ayuda">
+        {% if p.donde_key %}La conseguís en <a href="{{ p.donde_key }}" target="_blank" rel="noopener">{{ p.donde_key|replace('https://', '') }}</a>. {% endif %}
+        Se guarda solo en esta compu, nunca en el grabador ni en la carpeta de clases.
+      </span>
+      {% if key_oculta %}
+      <label class="check"><input type="checkbox" name="borrar_key" value="1"> Borrar la key guardada</label>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if p.tipo == 'openai' %}
+    <div class="campo">
+      <label for="base_url">Dirección del servicio</label>
+      <input id="base_url" name="base_url" value="{{ base_url }}" placeholder="https://.../v1" autocomplete="off">
+      {% if p.base_url %}<span class="ayuda">Ya viene completa; solo cambiala si sabés lo que hacés.</span>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="campo">
+      <label for="modelo">Modelo</label>
+      {% if modelos %}
+      <select id="modelo" name="modelo">
+        {% for m in modelos %}<option value="{{ m }}"{% if m == cuenta.modelo %} selected{% endif %}>{{ m }}</option>{% endfor %}
+      </select>
+      {% else %}
+      <input id="modelo" name="modelo" value="{{ cuenta.modelo }}" autocomplete="off" placeholder="Apretá «Probar conexión» para ver la lista">
+      {% endif %}
+      <span class="ayuda">«Probar conexión» le pregunta a {{ p.nombre }} qué modelos tenés disponibles.
+        {% if p.id == 'claude' %}Recomendado: <strong>claude-opus-5-5</strong> (mejor calidad) o <strong>claude-sonnet-5-5</strong> (más barato).{% endif %}</span>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" name="resumir_al_transcribir" value="1"{% if config.resumir_al_transcribir %} checked{% endif %}>
+      Resumir automáticamente cada clase apenas termina de transcribirse
+    </label>
+
+    <div class="dialogo-botones">
+      <button class="boton" name="accion" value="probar">Probar conexión</button>
+      <button class="boton boton-primario" name="accion" value="guardar">Guardar y usar {{ p.nombre.split(' (')[0] }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "macros.html" import dialogo_nombre, dialogo_borrar, icono_mas, icono_ok, texto_trabajo %}
+
+{% block titulo %}{{ materia.nombre }} — Mis clases{% endblock %}
+
+{% block contenido %}
+<nav class="migas" aria-label="Ubicación">
+  <a href="{{ url_for('inicio') }}">Mis materias</a><span>›</span><span>{{ materia.nombre }}</span>
+</nav>
+
+{% set fondo, tinta = materia.nombre|colores %}
+<div class="titulo-pagina">
+  <div class="encabezado-materia">
+    <div class="sigla sigla-grande" style="background: {{ fondo }}; color: {{ tinta }};">{{ materia.nombre|sigla }}</div>
+    <div>
+      <h1>{{ materia.nombre }}</h1>
+      <p class="subtitulo">{{ materia.cantidad_clases|plural('clase') }}</p>
+    </div>
+  </div>
+  <div class="acciones">
+    <button class="boton" data-abrir="renombrar-materia">Renombrar</button>
+    <button class="boton boton-peligro" data-abrir="borrar-materia">Borrar</button>
+    <button class="boton boton-primario" data-abrir="nueva-clase">{{ icono_mas() }} Nueva clase</button>
+  </div>
+</div>
+
+{% if clases %}
+<div class="lista">
+  {% for c in clases %}
+  <div class="fila">
+    <a class="fila-principal" href="{{ url_for('ver_clase', materia=materia.nombre, clase=c.nombre) }}">
+      <span class="fila-nombre">{{ c.nombre }}</span>
+      <span class="fila-detalle">{{ c.duracion|duracion }} · modificada {{ c.modificada|fecha }}</span>
+    </a>
+    <div class="fila-estado">
+      {% set e = estados[c.nombre] %}
+      {% if e and e.fase == 'error' %}<span class="chip chip-error">Error al {{ e.tarea }}</span>
+      {% elif e %}
+      <div class="progreso progreso-chico" data-progreso-url="{{ url_for('estado', materia=materia.nombre, clase=c.nombre) }}" data-tarea="{{ e.tarea }}">
+        <span class="progreso-texto" data-texto>{{ texto_trabajo(e) }}</span>
+        <div class="progreso-barra{% if e.tarea == 'resumir' %} progreso-indeterminado{% endif %}"><div data-barra style="width: {{ (e.progreso * 100)|round|int }}%;"></div></div>
+      </div>
+      {% elif c.tiene_transcripcion %}<span class="chip">{{ icono_ok() }} Transcripción</span>
+      {% else %}<span class="chip chip-pendiente">Sin transcripción</span>{% endif %}
+      {% if c.tiene_resumen %}<span class="chip">{{ icono_ok() }} Resumen</span>
+      {% else %}<span class="chip chip-pendiente">Sin resumen</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="vacio">
+  <strong>Esta materia no tiene clases</strong>
+  Creá una con «Nueva clase». Más adelante, las que grabes con el grabador van a aparecer acá solas.
+</div>
+{% endif %}
+
+{{ dialogo_nombre('nueva-clase', 'Nueva clase', url_for('crear_clase', materia=materia.nombre), 'Crear clase', valor=siguiente) }}
+{{ dialogo_nombre('renombrar-materia', 'Renombrar materia', url_for('renombrar_materia', materia=materia.nombre), 'Guardar', valor=materia.nombre) }}
+{{ dialogo_borrar('borrar-materia', '¿Borrar «' ~ materia.nombre ~ '»?', url_for('borrar_materia', materia=materia.nombre), 'Se borra la materia con todas sus clases, audios incluidos.') }}
+{% endblock %}
