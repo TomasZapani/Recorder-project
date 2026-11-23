@@ -1,7 +1,11 @@
 """Web local para organizar las clases grabadas.
 
-Uso:  ~/grabador/venv/bin/python web/app.py
+Uso:  venv/Scripts/python web/app.py   (en Linux: venv/bin/python)
 Abre: http://127.0.0.1:5000
+
+Escucha en toda la red local (0.0.0.0) para que el grabador pueda subir por WiFi y se
+pueda abrir desde el celu. HOST=127.0.0.1 la deja solo para esta compu; DEBUG=1 activa
+el modo de desarrollo (solo con HOST=127.0.0.1: el depurador permite correr código).
 
 Las carpetas viven en ~/Facultad (se cambia con la variable CLASES_DIR).
 """
@@ -18,10 +22,11 @@ from mdit_py_plugins.dollarmath import dollarmath_plugin
 from markupsafe import Markup
 
 import configuracion
+import grabador
 import resumidores
 import transcriptores
-from biblioteca import AUDIO, RESUMEN, Biblioteca, ErrorBiblioteca
-from configuracion import PROVEEDORES, key_oculta
+from biblioteca import AUDIO, RESUMEN, Biblioteca, ErrorBiblioteca, validar_nombre
+from configuracion import PROVEEDORES, TIPOS_DE_RESUMEN, key_oculta
 from tareas import RESUMIR, TRANSCRIBIR, Cola
 
 app = Flask(__name__)
@@ -29,6 +34,7 @@ app.secret_key = os.urandom(16)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024**3  # 2 GB: una clase larga en WAV ronda 170 MB
 biblioteca = Biblioteca(Path(os.environ.get("CLASES_DIR", "~/Facultad")))
 cola = Cola(biblioteca, transcriptores.por_defecto)
+app.register_blueprint(grabador.crear(biblioteca, cola))
 
 _OCUPADA = "Esperá a que termine la transcripción o el resumen para hacer cambios."
 
@@ -51,7 +57,28 @@ def markdown(texto: str) -> Markup:
 @app.context_processor
 def configuracion_actual():
     config = configuracion.cargar()
-    return {"falta_para_resumir": config.falta_para_resumir(), "proveedor_actual": PROVEEDORES[config.proveedor]}
+    return {
+        "falta_para_resumir": config.falta_para_resumir(),
+        "proveedor_actual": PROVEEDORES[config.proveedor],
+        "destino": (config.materia_grabador, config.clase_grabador),
+    }
+
+
+def _seguir_destino(materia: str, clase: str | None, nueva_materia: str | None, nueva_clase: str | None) -> None:
+    """Si se renombra o se borra la carpeta marcada para el grabador, el destino la sigue."""
+    config = configuracion.cargar()
+    if config.materia_grabador != materia:
+        return
+    if clase is None:  # la materia entera
+        if nueva_materia is None:
+            config.materia_grabador, config.clase_grabador = configuracion.MATERIA_GRABADOR, ""
+        else:
+            config.materia_grabador = nueva_materia
+    elif config.clase_grabador == clase:
+        config.clase_grabador = nueva_clase or ""
+    else:
+        return
+    configuracion.guardar(config)
 
 # Pares (fondo, tinta) para el ícono de cada materia; contraste AA.
 _COLORES = [
@@ -155,6 +182,7 @@ def renombrar_materia(materia):
         return redirect(url_for("ver_materia", materia=materia))
     try:
         nuevo = biblioteca.renombrar_materia(materia, request.form.get("nombre", ""))
+        _seguir_destino(materia, None, nuevo, None)
         flash("Materia renombrada.", "ok")
         return redirect(url_for("ver_materia", materia=nuevo))
     except ErrorBiblioteca as e:
@@ -169,6 +197,7 @@ def borrar_materia(materia):
         return redirect(url_for("ver_materia", materia=materia))
     try:
         biblioteca.borrar_materia(materia)
+        _seguir_destino(materia, None, None, None)
         flash(f"«{materia}» se movió a la papelera.", "ok")
     except ErrorBiblioteca as e:
         flash(str(e), "error")
@@ -212,6 +241,7 @@ def renombrar_clase(materia, clase):
         return redirect(url_for("ver_clase", materia=materia, clase=clase))
     try:
         nuevo = biblioteca.renombrar_clase(materia, clase, request.form.get("nombre", ""))
+        _seguir_destino(materia, clase, materia, nuevo)
         flash("Clase renombrada.", "ok")
         return redirect(url_for("ver_clase", materia=materia, clase=nuevo))
     except ErrorBiblioteca as e:
@@ -226,6 +256,7 @@ def borrar_clase(materia, clase):
         return redirect(url_for("ver_clase", materia=materia, clase=clase))
     try:
         biblioteca.borrar_clase(materia, clase)
+        _seguir_destino(materia, clase, materia, None)
         flash(f"«{clase}» se movió a la papelera.", "ok")
     except ErrorBiblioteca as e:
         flash(str(e), "error")
@@ -313,6 +344,37 @@ def guardar_contexto(materia, clase):
     return redirect(url_for("ver_clase", materia=materia, clase=clase))
 
 
+# --- destino del grabador ----------------------------------------------------
+
+@app.post("/m/<materia>/destino")
+def destino_materia(materia):
+    try:
+        biblioteca.materia(materia)
+    except ErrorBiblioteca:
+        abort(404)
+    config = configuracion.cargar()
+    config.materia_grabador, config.clase_grabador = materia, ""
+    configuracion.guardar(config)
+    flash(f"Listo: cada grabación nueva va a llegar como una clase nueva en «{materia}».", "ok")
+    return redirect(url_for("ver_materia", materia=materia))
+
+
+@app.post("/m/<materia>/c/<clase>/destino")
+def destino_clase(materia, clase):
+    try:
+        c = biblioteca.clase(materia, clase)
+    except ErrorBiblioteca:
+        abort(404)
+    if c.tiene_audio:
+        flash("Esta clase ya tiene audio: la próxima grabación no puede caer acá.", "error")
+    else:
+        config = configuracion.cargar()
+        config.materia_grabador, config.clase_grabador = materia, clase
+        configuracion.guardar(config)
+        flash(f"Listo: la próxima grabación va a caer en «{materia} / {clase}».", "ok")
+    return redirect(url_for("ver_clase", materia=materia, clase=clase))
+
+
 # --- configuración -----------------------------------------------------------
 
 def _pagina_configuracion(config, pid: str, modelos: list[str] | None = None):
@@ -326,6 +388,8 @@ def _pagina_configuracion(config, pid: str, modelos: list[str] | None = None):
         key_oculta=key_oculta(cuenta.api_key),
         base_url=config.base_url(pid),
         modelos=modelos or [],
+        tipos_de_resumen=TIPOS_DE_RESUMEN,
+        materias=[m.nombre for m in biblioteca.materias()],
     )
 
 
@@ -353,6 +417,13 @@ def guardar_configuracion():
         cuenta.base_url = "" if url == PROVEEDORES[pid].base_url else url
     config.proveedor = pid
     config.resumir_al_transcribir = bool(request.form.get("resumir_al_transcribir"))
+    if (tipo := request.form.get("tipo_resumen")) in TIPOS_DE_RESUMEN:
+        config.tipo_resumen = tipo
+    if (materia := request.form.get("materia_grabador", "").strip()) and materia != config.materia_grabador:
+        try:
+            config.materia_grabador, config.clase_grabador = validar_nombre(materia), ""
+        except ErrorBiblioteca as e:
+            flash(f"Materia del grabador: {e}", "error")
     configuracion.guardar(config)
 
     if request.form.get("accion") == "probar":
@@ -380,4 +451,6 @@ def no_encontrado(_):
 
 if __name__ == "__main__":
     print(f"Carpetas en: {biblioteca.raiz}")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    host = os.environ.get("HOST", "0.0.0.0")
+    debug = bool(os.environ.get("DEBUG")) and host == "127.0.0.1"
+    app.run(host=host, port=5000, debug=debug, threaded=True)

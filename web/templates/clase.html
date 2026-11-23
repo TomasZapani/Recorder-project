@@ -16,6 +16,13 @@
     <p class="subtitulo">{{ materia.nombre }} · {{ clase.duracion|duracion }} · modificada {{ clase.modificada|fecha }}</p>
   </div>
   <div class="acciones">
+    {% if destino == (materia.nombre, clase.nombre) %}
+    <span class="chip chip-destino">🎙 La próxima grabación cae acá</span>
+    {% elif not clase.tiene_audio %}
+    <form method="post" action="{{ url_for('destino_clase', materia=materia.nombre, clase=clase.nombre) }}">
+      <button class="boton boton-primario">🎙 Que la próxima grabación caiga acá</button>
+    </form>
+    {% endif %}
     <button class="boton" data-abrir="renombrar-clase">Renombrar</button>
     <button class="boton boton-peligro" data-abrir="borrar-clase">Borrar</button>
   </div>

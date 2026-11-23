@@ -151,6 +151,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; }
 
 .markdown .math.block { margin: 0 0 1em; padding: 8px 0; overflow-x: auto; text-align: center; }
 .markdown .katex { font-size: 1.08em; }
+.markdown .diagrama { margin: 0 0 1.2em; padding: 16px; border: 1px solid var(--borde); border-radius: 12px; background: #FFFFFF; overflow-x: auto; text-align: center; white-space: pre-wrap; }
+.markdown .diagrama svg { max-width: 100%; height: auto; }
 
 /* --- configuración --- */
 .boton-icono-texto { min-height: 44px; }
@@ -189,3 +191,9 @@ dialog::backdrop { background: rgba(26, 29, 35, .45); }
   .titulo-pagina h1 { font-size: 28px; }
   .panel { padding: 20px; }
 }
+
+/* --- destino del grabador --- */
+.destino-grabador { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 16px; padding: 8px 14px; border-radius: 12px; background: #E4E9FB; color: #2F4BC4; font-size: 14px; font-weight: 500; }
+.destino-grabador a { color: inherit; font-weight: 600; }
+.destino-nota { color: #4A5163; font-weight: 400; }
+.chip-destino { background: #E4E9FB; color: #2F4BC4; }

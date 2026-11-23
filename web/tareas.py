@@ -28,9 +28,9 @@ class Estado:
     error: str = ""
 
 
-def armar_prompt(materia: str, clase: str, contexto: str) -> str:
+def armar_prompt(materia: str, clase: str, contexto: str, tipo: str = "clase") -> str:
     """Contexto para Whisper: le dice de qué se habla para que acierte los términos."""
-    prompt = f"Clase de {materia}. {clase}."
+    prompt = f"Reunión de {materia}. {clase}." if tipo == "reunion" else f"Clase de {materia}. {clase}."
     if contexto:
         prompt += " " + contexto[:_MAX_CONTEXTO]
     return prompt
@@ -112,7 +112,8 @@ class Cola:
             raise RuntimeError("La clase no tiene audio.")
         if self._transcriptor is None:
             self._transcriptor = self._fabrica()
-        prompt = armar_prompt(materia, clase, self._biblioteca.leer_contexto(materia, clase))
+        contexto = self._biblioteca.leer_contexto(materia, clase)
+        prompt = armar_prompt(materia, clase, contexto, configuracion.cargar().tipo_resumen)
 
         def progreso(valor: float) -> None:
             estado.progreso = valor

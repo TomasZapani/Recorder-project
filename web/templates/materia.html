@@ -18,6 +18,13 @@
     </div>
   </div>
   <div class="acciones">
+    {% if destino == (materia.nombre, '') %}
+    <span class="chip chip-destino">🎙 Las grabaciones llegan acá</span>
+    {% else %}
+    <form method="post" action="{{ url_for('destino_materia', materia=materia.nombre) }}">
+      <button class="boton">🎙 Grabar en esta materia</button>
+    </form>
+    {% endif %}
     <button class="boton" data-abrir="renombrar-materia">Renombrar</button>
     <button class="boton boton-peligro" data-abrir="borrar-materia">Borrar</button>
     <button class="boton boton-primario" data-abrir="nueva-clase">{{ icono_mas() }} Nueva clase</button>
@@ -33,6 +40,7 @@
       <span class="fila-detalle">{{ c.duracion|duracion }} · modificada {{ c.modificada|fecha }}</span>
     </a>
     <div class="fila-estado">
+      {% if destino == (materia.nombre, c.nombre) %}<span class="chip chip-destino">🎙 Próxima grabación</span>{% endif %}
       {% set e = estados[c.nombre] %}
       {% if e and e.fase == 'error' %}<span class="chip chip-error">Error al {{ e.tarea }}</span>
       {% elif e %}

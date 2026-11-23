@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='katex/katex.min.css') }}">
   <script defer src="{{ url_for('static', filename='katex/katex.min.js') }}"></script>
   <script defer src="{{ url_for('static', filename='katex/mhchem.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='mermaid/mermaid.min.js') }}"></script>
 </head>
 <body>
   <header class="cabecera">
@@ -26,6 +27,13 @@
   </header>
 
   <main class="contenido">
+    <p class="destino-grabador">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
+      Próxima grabación →
+      <a href="{{ url_for('ver_materia', materia=destino[0]) }}">{{ destino[0] }}</a>
+      {% if destino[1] %}/ <a href="{{ url_for('ver_clase', materia=destino[0], clase=destino[1]) }}">{{ destino[1] }}</a>
+      {% else %}<span class="destino-nota">(en una clase nueva)</span>{% endif %}
+    </p>
     {% for categoria, mensaje in get_flashed_messages(with_categories=true) %}
       <div class="aviso aviso-{{ categoria }}" role="status">{{ mensaje }}</div>
     {% endfor %}
@@ -89,6 +97,22 @@
       document.querySelectorAll('.markdown .math').forEach((el) => {
         katex.render(el.textContent.trim(), el, { displayMode: el.classList.contains('block'), throwOnError: false });
       });
+    });
+    // Diagramas: los bloques ```mermaid del Markdown se dibujan con Mermaid (también guardado en la web).
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.mermaid) return;
+      const nodos = [...document.querySelectorAll('.markdown code.language-mermaid')].map((code) => {
+        const div = document.createElement('div');
+        div.className = 'diagrama';
+        div.textContent = code.textContent;  // texto plano: nunca se interpreta como HTML
+        code.closest('pre').replaceWith(div);
+        return div;
+      });
+      if (!nodos.length) return;
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'base',
+        themeVariables: { primaryColor: '#E4E9FB', primaryBorderColor: '#2F4BC4', primaryTextColor: '#141A33', lineColor: '#2F4BC4', fontFamily: 'IBM Plex Sans, sans-serif' } });
+      // suppressErrors: si el modelo escribió un diagrama inválido, queda el texto y la página sigue andando.
+      mermaid.run({ nodes: nodos, suppressErrors: true });
     });
     // Mientras sube: mostrar el aviso y bloquear botones para no mandar dos veces.
     document.addEventListener('submit', (e) => {

@@ -3,7 +3,7 @@
 import anthropic
 
 from biblioteca import Frase
-from resumidores import SISTEMA, ErrorResumen, mensaje_usuario
+from resumidores import ErrorResumen, mensaje_usuario
 
 
 def _traducir_error(e: Exception) -> ErrorResumen:
@@ -26,9 +26,10 @@ def _traducir_error(e: Exception) -> ErrorResumen:
 
 
 class ResumidorClaude:
-    def __init__(self, api_key: str, modelo: str):
+    def __init__(self, api_key: str, modelo: str, sistema: str):
         self._cliente = anthropic.Anthropic(api_key=api_key)
         self.modelo = modelo
+        self._sistema = sistema
         self.nombre = f"Claude (Anthropic) · {modelo}"
 
     def resumir(self, frases: list[Frase], materia: str, clase: str, contexto: str) -> str:
@@ -42,7 +43,7 @@ class ResumidorClaude:
                 # biología), la API reintenta sola con el modelo que Anthropic recomienda.
                 betas=["server-side-fallback-2026-07-01"],
                 fallbacks="default",
-                system=SISTEMA,
+                system=self._sistema,
                 messages=[{"role": "user", "content": mensaje_usuario(frases, materia, clase, contexto)}],
             ) as stream:
                 respuesta = stream.get_final_message()

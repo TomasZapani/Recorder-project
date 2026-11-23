@@ -63,6 +63,22 @@
         {% if p.id == 'claude' %}Recomendado: <strong>claude-opus-5-5</strong> (mejor calidad) o <strong>claude-sonnet-5-5</strong> (más barato).{% endif %}</span>
     </div>
 
+    <div class="campo">
+      <label for="tipo_resumen">Qué armar con la transcripción</label>
+      <select id="tipo_resumen" name="tipo_resumen">
+        {% for clave, nombre in tipos_de_resumen.items() %}
+        <option value="{{ clave }}"{% if config.tipo_resumen == clave %} selected{% endif %}>{{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="materia_grabador">Materia donde caen las grabaciones del grabador</label>
+      <input id="materia_grabador" name="materia_grabador" value="{{ config.materia_grabador }}" list="materias-existentes" autocomplete="off">
+      <datalist id="materias-existentes">{% for m in materias %}<option value="{{ m }}">{% endfor %}</datalist>
+      <span class="ayuda">Si no existe, se crea sola con la primera grabación que llegue por WiFi.</span>
+    </div>
+
     <label class="check">
       <input type="checkbox" name="resumir_al_transcribir" value="1"{% if config.resumir_al_transcribir %} checked{% endif %}>
       Resumir automáticamente cada clase apenas termina de transcribirse

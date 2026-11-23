@@ -44,6 +44,12 @@ PROVEEDORES = {
 }
 
 
+# Qué arma el resumidor con la transcripción: el mismo pipeline sirve para clases y reuniones.
+TIPOS_DE_RESUMEN = {"clase": "Apuntes de clase", "reunion": "Minuta de reunión"}
+
+MATERIA_GRABADOR = "Grabador"
+
+
 @dataclass
 class Cuenta:
     """Lo que el usuario cargó para un proveedor."""
@@ -58,6 +64,9 @@ class Configuracion:
     proveedor: str = "claude"
     cuentas: dict[str, Cuenta] = field(default_factory=dict)
     resumir_al_transcribir: bool = True
+    tipo_resumen: str = "clase"  # clave de TIPOS_DE_RESUMEN
+    materia_grabador: str = MATERIA_GRABADOR  # dónde caen las grabaciones que sube el grabador
+    clase_grabador: str = ""  # subcarpeta para la próxima grabación; vacío = una nueva por grabación
 
     def cuenta(self, proveedor: str | None = None) -> Cuenta:
         return self.cuentas.setdefault(proveedor or self.proveedor, Cuenta())
@@ -93,10 +102,14 @@ def cargar() -> Configuracion:
         if pid in PROVEEDORES
     }
     proveedor = datos.get("proveedor", "claude")
+    tipo = datos.get("tipo_resumen", "clase")
     return Configuracion(
         proveedor=proveedor if proveedor in PROVEEDORES else "claude",
         cuentas=cuentas,
         resumir_al_transcribir=bool(datos.get("resumir_al_transcribir", True)),
+        tipo_resumen=tipo if tipo in TIPOS_DE_RESUMEN else "clase",
+        materia_grabador=str(datos.get("materia_grabador", "")).strip() or MATERIA_GRABADOR,
+        clase_grabador=str(datos.get("clase_grabador", "")).strip(),
     )
 
 

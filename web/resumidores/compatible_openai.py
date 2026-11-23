@@ -7,7 +7,7 @@ cualquier otro que hable el mismo formato: solo cambian la dirección y la key.
 import openai
 
 from biblioteca import Frase
-from resumidores import SISTEMA, ErrorResumen, mensaje_usuario
+from resumidores import ErrorResumen, mensaje_usuario
 
 
 def _traducir_error(e: Exception, servicio: str) -> ErrorResumen:
@@ -34,10 +34,11 @@ def _cliente(base_url: str, api_key: str) -> openai.OpenAI:
 
 
 class ResumidorCompatibleOpenAI:
-    def __init__(self, servicio: str, base_url: str, api_key: str, modelo: str):
+    def __init__(self, servicio: str, base_url: str, api_key: str, modelo: str, sistema: str):
         self._servicio = servicio
         self._cliente = _cliente(base_url, api_key)
         self.modelo = modelo
+        self._sistema = sistema
         self.nombre = f"{servicio} · {modelo}"
 
     def resumir(self, frases: list[Frase], materia: str, clase: str, contexto: str) -> str:
@@ -45,7 +46,7 @@ class ResumidorCompatibleOpenAI:
             respuesta = self._cliente.chat.completions.create(
                 model=self.modelo,
                 messages=[
-                    {"role": "system", "content": SISTEMA},
+                    {"role": "system", "content": self._sistema},
                     {"role": "user", "content": mensaje_usuario(frases, materia, clase, contexto)},
                 ],
             )

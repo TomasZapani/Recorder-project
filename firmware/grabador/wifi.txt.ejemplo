@@ -1,0 +1,5 @@
+# Copiar a la raíz de la microSD como wifi.txt y completar.
+# compu = IP de la compu donde corre la web, con el puerto (ipconfig la muestra).
+red=NombreDeLaRed
+clave=LaClave
+compu=192.168.1.4:5000

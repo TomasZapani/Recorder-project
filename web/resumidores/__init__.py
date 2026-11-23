@@ -32,6 +32,44 @@ transcripción, por ejemplo (12:40).
 
 No agregues información que no esté en la clase."""
 
+# Se suma a los dos tipos de resumen. La web y Obsidian dibujan los bloques ```mermaid.
+# La sintaxis va acotada a propósito: es la que los modelos escriben sin errores.
+DIAGRAMA = """
+
+Diagrama: al final, agregá UN diagrama que explique de un vistazo lo charlado, en una sección \
+"## Diagrama", en un bloque de código ```mermaid. En una clase: el mapa de cómo se relacionan \
+los conceptos, o los pasos de un proceso. En una reunión: los temas, lo que se decidió en cada \
+uno y las tareas que salieron, con su responsable. Usá solo `flowchart TD` o `flowchart LR`, con ids cortos sin espacios y el \
+texto de cada caja siempre entre comillas dobles, por ejemplo A["Medir el voltaje"] --> B["Calcular"]. \
+Sin comillas dobles, paréntesis ni corchetes dentro del texto de las cajas; los acentos y la ñ \
+sí van, escritos normalmente. Máximo 12 cajas. \
+Omitilo solo si la grabación casi no tiene contenido."""
+
+SISTEMA_REUNION = """\
+Armás la minuta de una reunión presencial de trabajo a partir de su transcripción. Los \
+participantes van a usarla para saber qué se decidió y qué tiene que hacer cada uno, así que \
+tiene que ser fiel a lo que se dijo, concreta y fácil de leer. Te llegan el nombre de la \
+carpeta (proyecto o equipo) como "Materia" y el nombre de la reunión como "Clase".
+
+La transcripción es automática: puede tener palabras mal reconocidas (un nombre propio, una \
+empresa o una sigla escrita parecido). Corregilas cuando el contexto deje claro qué se quiso \
+decir; si no está claro, no inventes.
+
+Escribí en español, en Markdown, con estas secciones en este orden:
+- Un párrafo corto al principio: de qué se trató la reunión.
+- "## Decisiones": lo que quedó acordado, una por línea.
+- "## Tareas": una lista con **responsable**, qué tiene que hacer y la fecha si se dijo. Si no \
+quedó claro quién la hace, poné "sin responsable".
+- "## Temas tratados": un subtítulo (###) por tema, en el orden en que se hablaron, con lo \
+importante de cada uno. Junto a cada subtítulo, entre paréntesis, el minuto donde arranca \
+según las marcas de la transcripción, por ejemplo (12:40).
+- "## Pendientes": preguntas o temas que quedaron abiertos, si los hubo.
+
+Omití una sección si no hay nada para poner en ella. No agregues información que no esté en la \
+reunión: nada de tareas, fechas ni responsables supuestos."""
+
+SISTEMAS = {"clase": SISTEMA + DIAGRAMA, "reunion": SISTEMA_REUNION + DIAGRAMA}
+
 
 class ErrorResumen(Exception):
     """Error pensado para mostrárselo al usuario tal cual."""
@@ -62,13 +100,14 @@ def desde_config(config: Configuracion) -> Resumidor:
     if falta := config.falta_para_resumir():
         raise ErrorResumen(f"{falta} Completalo en Configuración.")
     proveedor, cuenta = PROVEEDORES[config.proveedor], config.cuenta()
+    sistema = SISTEMAS[config.tipo_resumen]
     if proveedor.tipo == "claude":
         from resumidores.claude import ResumidorClaude
 
-        return ResumidorClaude(cuenta.api_key, cuenta.modelo)
+        return ResumidorClaude(cuenta.api_key, cuenta.modelo, sistema)
     from resumidores.compatible_openai import ResumidorCompatibleOpenAI
 
-    return ResumidorCompatibleOpenAI(proveedor.nombre, config.base_url(), cuenta.api_key, cuenta.modelo)
+    return ResumidorCompatibleOpenAI(proveedor.nombre, config.base_url(), cuenta.api_key, cuenta.modelo, sistema)
 
 
 def listar_modelos(config: Configuracion, proveedor_id: str) -> list[str]:
