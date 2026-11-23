@@ -1,7 +1,19 @@
-# Grabaciones de prueba: tienen voz y datos personales, no van al repo
+# Grabaciones: tienen voz y datos personales, no van al repo
 *.wav
 *.pcm
+*.raw
+*.sub
+*.mp3
+*.m4a
+*.ogg
 grabacion*_transcripcion.md
+
+# Credenciales del WiFi del grabador (va en la microSD, nunca al repo)
+wifi.txt
+
+# Notas internas (quedan en el disco, no en GitHub)
+CLAUDE.md
+MIGRAR_A_WINDOWS.md
 
 # Python
 __pycache__/
@@ -17,3 +29,4 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
