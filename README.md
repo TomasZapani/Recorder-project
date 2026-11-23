@@ -67,25 +67,26 @@ La pantalla del grabador te va contando qué pasa: grabando, subiendo, "Transcri
 ## 🔌 Conexiones
 
 <p align="center"><img src="docs/img/circuito.png" alt="Esquema del circuito" width="700"></p>
-| Módulo | Pin del módulo | ESP32 |
+
+| Módulo | Pin (como dice la placa) | Va a la ESP32 |
 |---|---|---|
-| **Micrófono MAX9814** | OUT | GPIO 35 |
-| | VDD | 3V3 |
-| | GND | GND |
-| | GAIN, A/R | sin conectar |
-| **OLED SSD1306** | SDA | GPIO 22 |
-| | SCL | GPIO 23 |
-| | VCC | 3V3 |
-| | GND | GND |
-| **Pulsador** | S | GPIO 27 |
-| | + | 3V3 |
-| | − | GND |
-| **Lector microSD** | SCK | GPIO 17 |
-| | MISO | GPIO 18 |
-| | MOSI | GPIO 19 |
-| | CS | GPIO 5 |
-| | VCC | 5V (VIN) |
-| | GND | GND |
+| 🎤 Micrófono MAX9814 | Out | GPIO 35 |
+| 🎤 Micrófono MAX9814 | Vdd | 3V3 |
+| 🎤 Micrófono MAX9814 | GND | GND |
+| 🎤 Micrófono MAX9814 | Gain, AR | sin conectar |
+| 🖥️ OLED SSD1306 | SDA | GPIO 22 |
+| 🖥️ OLED SSD1306 | SCK (es el SCL del I2C) | GPIO 23 |
+| 🖥️ OLED SSD1306 | VDD | 3V3 |
+| 🖥️ OLED SSD1306 | GND | GND |
+| 🔘 Pulsador | S | GPIO 27 |
+| 🔘 Pulsador | + | 3V3 |
+| 🔘 Pulsador | − | GND |
+| 💾 Lector microSD | SCK | GPIO 17 |
+| 💾 Lector microSD | MISO | GPIO 18 |
+| 💾 Lector microSD | MOSI | GPIO 19 |
+| 💾 Lector microSD | CS | GPIO 5 |
+| 💾 Lector microSD | VCC | 5V (VIN) |
+| 💾 Lector microSD | GND | GND |
 
 Detalles que importan:
 
