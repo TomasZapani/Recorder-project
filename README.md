@@ -202,5 +202,3 @@ La key se guarda solo en tu compu, en `~/.config/mis-clases/config.json` (en Win
 ## 📄 Licencia
 
 [MIT](LICENSE) © 2026 Tomás Zapani. Usalo, copialo, modificalo y armate el tuyo.
-
-Hecho para la facultad, en una protoboard. 🛠️
